@@ -21,8 +21,7 @@ AWS PART
 
 create terraform files for this entire project.
 
-create github actions to make this entire flow automatic.
-
+USE GITHUBACTIONS TO MAKE THIS AUTOMATED WITH PULL AND PUSH EVENTS 
 
   
 
