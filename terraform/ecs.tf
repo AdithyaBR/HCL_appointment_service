@@ -71,7 +71,7 @@ resource "aws_ecs_service" "appointment_service" {
     target_group_arn = aws_lb_target_group.appointment_service.arn
     container_name   = var.container_name
     container_port   = var.container_port
-  }
+  }   
 
   depends_on = [aws_lb_listener.front_end]
 }
