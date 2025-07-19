@@ -1,41 +1,90 @@
-variable "ecs_cluster_name" {
-  description = "ECS Cluster Name"
+# ========== AWS & VPC Configuration ==========
+
+variable "aws_region" {
+  description = "AWS region for the deployment"
   type        = string
-  default     = "healthcare-cluster"
+}
+
+variable "vpc_name" {
+  description = "Name of the VPC"
+  type        = string
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+}
+
+variable "availability_zones" {
+  description = "List of availability zones"
+  type        = list(string)
+}
+
+variable "public_subnet_cidrs" {
+  description = "List of CIDRs for public subnets"
+  type        = list(string)
+}
+
+variable "private_subnet_cidrs" {
+  description = "List of CIDRs for private subnets"
+  type        = list(string)
+}
+
+variable "enable_nat_gateway" {
+  description = "Enable NAT gateway for private subnet internet access"
+  type        = bool
+}
+
+variable "single_nat_gateway" {
+  description = "Use single NAT gateway across all AZs"
+  type        = bool
+}
+
+# ========== ECS Cluster & Task Configuration ==========
+
+variable "ecs_cluster_name" {
+  description = "Name of the ECS Cluster"
+  type        = string
 }
 
 variable "ecs_task_execution_role_name" {
-  description = "IAM role for ECS task execution"
+  description = "IAM Role name for ECS task execution"
   type        = string
-  default     = "ecs-task-execution-role2"
 }
 
 variable "task_family_name" {
-  description = "Task Definition Family Name"
+  description = "The family name of the ECS task definition"
   type        = string
-  default     = "appointment-service"
+}
+
+variable "fargate_cpu" {
+  description = "CPU units for ECS Fargate task"
+  type        = string
+}
+
+variable "fargate_memory" {
+  description = "Memory in MiB for ECS Fargate task"
+  type        = string
 }
 
 variable "container_name" {
-  description = "Name of the ECS container"
+  description = "The name of the container inside the ECS task"
   type        = string
-  default     = "appointment-service"
 }
 
 variable "container_port" {
-  description = "Port used by the ECS container"
+  description = "The container port to expose"
   type        = number
-  default     = 3001
-}
-
-variable "log_group_name" {
-  description = "Log group for ECS containers"
-  type        = string
-  default     = "/ecs/appointment-service"
 }
 
 variable "desired_count" {
-  description = "Number of ECS tasks to run"
+  description = "Number of desired ECS service instances"
   type        = number
-  default     = 1
+}
+
+# ========== CloudWatch & Logging ==========
+
+variable "log_group_name" {
+  description = "The name of the log group used by ECS for logging"
+  type        = string
 }
