@@ -7,8 +7,7 @@ resource "aws_lb" "healthcare_alb1" {
   subnets            = module.vpc.public_subnets
 }
 
-
-# ====================== Appointment Service ALB Resources ======================
+# ====================== Appointment Service Target Group ======================
 resource "aws_lb_target_group" "appointment_service" {
   name        = "appointment-stg"
   port        = 3001
@@ -22,22 +21,6 @@ resource "aws_lb_target_group" "appointment_service" {
     unhealthy_threshold = 2
     timeout             = 3
     interval            = 30
-  }
-}
-
-resource "aws_lb_listener_rule" "appointment_service" {
-  listener_arn = aws_lb_listener.front_end.arn # Changed to match listener name
-  priority     = 200                           # Must be unique and lower numbers evaluate first
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.appointment_service.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/appointment*"]
-    }
   }
 }
 
@@ -57,12 +40,27 @@ resource "aws_lb_listener" "front_end" {
   }
 }
 
+# ====================== Listener Rule for Appointment Service ======================
+resource "aws_lb_listener_rule" "appointment_service" {
+  listener_arn = aws_lb_listener.front_end.arn
+  priority     = 200
 
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.appointment_service.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/appointment*"]
+    }
+  }
+}
+
+# ====================== Outputs ======================
 output "alb_dns_name" {
   value = aws_lb.healthcare_alb1.dns_name
 }
-
-
 
 output "appointment_service_url" {
   value = "http://${aws_lb.healthcare_alb1.dns_name}/appointments"
