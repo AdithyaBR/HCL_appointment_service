@@ -1,3 +1,3 @@
-resource "aws_ecr_repository_adi" "appointment_service" {
+resource "aws_ecr_repository" "appointment_service" {
   name = "appointment-service"
 }
