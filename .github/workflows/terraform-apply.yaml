@@ -1,0 +1,106 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+# ====================== VPC Module (used for subnets) ======================
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.0.0"
+
+  name = "Patient-Appointment-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-east-1a", "us-east-1b"]
+  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  private_subnets = ["10.0.3.0/24", "10.0.4.0/24"]
+
+  enable_nat_gateway = true
+  single_nat_gateway = true
+}
+
+# ====================== ECS Cluster ======================
+resource "aws_ecs_cluster" "healthcare_cluster" {
+  name = "healthcare-cluster"
+}
+
+# ====================== IAM Role for ECS Task Execution ======================
+resource "aws_iam_role" "ecs_task_execution_role2" {
+  name = "ecs-task-execution-role2"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = "sts:AssumeRole",
+      Effect = "Allow",
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role2.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# ====================== ECS Task Definition for Appointment Service ======================
+resource "aws_ecs_task_definition" "appointment_service" {
+  family                   = "appointment-service"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role2.arn
+
+  container_definitions = jsonencode([{
+    name      = "appointment-service",
+    image     = "${aws_ecr_repository.appointment_service.repository_url}:latest",
+    essential = true,
+    portMappings = [{
+      containerPort = 3001,
+      hostPort      = 3001,
+      protocol      = "tcp"
+    }],
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        "awslogs-group"         = "/ecs/appointment-service",
+        "awslogs-region"        = "us-east-1",
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
+  }])
+}
+
+# ====================== ECS Service for Appointment Service ======================
+resource "aws_ecs_service" "appointment_service" {
+  name            = "appointment-service"
+  cluster         = aws_ecs_cluster.healthcare_cluster.id
+  task_definition = aws_ecs_task_definition.appointment_service.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets          = module.vpc.private_subnets
+    security_groups  = [aws_security_group.ecs_service.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.appointment_service.arn
+    container_name   = "appointment-service"
+    container_port   = 3001
+  }
+
+  depends_on = [aws_lb_listener.front_end]
+}
