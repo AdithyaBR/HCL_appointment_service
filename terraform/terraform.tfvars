@@ -1,2 +1,9 @@
-fargate_cpu    = "1024"  # 1 vCPU
-fargate_memory = "2048"  # 2 GB RAM
+fargate_cpu           = "512"
+fargate_memory        = "1024"
+ecs_cluster_name      = "healthcare-cluster"
+ecs_task_execution_role_name = "ecs-task-execution-role2"
+task_family_name      = "appointment-service"
+container_name        = "appointment-service"
+container_port        = 3001
+log_group_name        = "/ecs/appointment-service"
+desired_count         = 1
